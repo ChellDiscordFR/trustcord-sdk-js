@@ -12,6 +12,10 @@ export interface Status {
     blacklisted: boolean;
     level: Level | null;
     since: Date | null;
+}
+
+/** The official bot also learns whether the account sits on the Trustcord staff. */
+export interface BotStatus extends Status {
     staffRole: StaffRole | null;
 }
 

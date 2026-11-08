@@ -13,7 +13,7 @@ test('inspection never exposes either client API key, even after a request', asy
         } });
         assert.equal(inspect(new Client('SECRETKEY123'), { depth: 10 }).includes('SECRETKEY123'), false);
         assert.equal(inspect(api, { depth: 10 }).includes('SECRETKEY123'), false);
-        await api.lookup(userId);
+        await (api instanceof TrustcordBot ? api.lookup(userId, userId) : api.lookup(userId));
         assert.equal(inspect(api, { depth: 10 }).includes('SECRETKEY123'), false);
     }
 });
@@ -29,7 +29,7 @@ test('HTTPS and loopback HTTP base URLs are accepted by both clients', async () 
                 assert.equal(url, `${baseUrl.replace(/\/+$/, '')}${path}${userId}`);
                 return Response.json({ blacklisted: false });
             } });
-            await api.lookup(userId);
+            await (api instanceof TrustcordBot ? api.lookup(userId, userId) : api.lookup(userId));
         }
     }
 });

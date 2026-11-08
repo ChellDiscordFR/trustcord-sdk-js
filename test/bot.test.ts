@@ -6,19 +6,21 @@ import {
     userId, wireCase, wireTally,
 } from './helpers';
 
-test('bot lookup and cases use Bot auth without an acting user', async () => {
+test('bot lookup carries the acting user, cases use Bot auth without one', async () => {
     const paths: string[] = [];
+    const actingUserId = '234567890123456789';
     const bot = new TrustcordBot('secret', { fetch: async (url, init) => {
         const headers = new Headers(init?.headers);
         assert.equal(headers.get('Authorization'), 'Bot secret');
-        assert.equal(headers.has('X-Trustcord-User'), false);
         paths.push(String(url));
         if (String(url).includes('/lookup/')) {
+            assert.equal(headers.get('X-Trustcord-User'), actingUserId);
             return Response.json({ blacklisted: false, staff_role: 'admin' });
         }
+        assert.equal(headers.has('X-Trustcord-User'), false);
         return Response.json([wireCase, { ...wireCase, expires_at: null, kind: 'unblacklist', status: 'escalated' }]);
     } });
-    assert.deepEqual(await bot.lookup(userId), {
+    assert.deepEqual(await bot.lookup(actingUserId, userId), {
         userId, blacklisted: false, level: null, since: null, staffRole: 'admin',
     });
     for (const state of ['open', 'recent'] as const) {

@@ -3,23 +3,21 @@ import { test } from 'node:test';
 import { LEVELS, Trustcord, TrustcordBot, levelAtLeast } from '../src';
 import { checkForm, receipt, report, userId } from './helpers';
 
-test('lookup maps snake case, unix seconds (including zero), staff roles and defaults', async () => {
-    for (const role of ['jury', 'admin', null]) {
-        const api = new Trustcord('key', { fetch: async (url, init) => {
-            assert.equal(url, `https://api.trustcord.org/v1/lookup/${userId}`);
-            assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer key');
-            return Response.json({ blacklisted: true, blacklistdate: 0, blacklistlevel: 'high', staff_role: role });
-        } });
-        assert.deepEqual(await api.lookup(userId), {
-            userId, blacklisted: true, level: 'high', since: new Date(0), staffRole: role,
-        });
-    }
+test('lookup maps snake case, unix seconds (including zero) and defaults, never a staff role', async () => {
+    const listed = new Trustcord('key', { fetch: async (url, init) => {
+        assert.equal(url, `https://api.trustcord.org/v1/lookup/${userId}`);
+        assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer key');
+        return Response.json({ blacklisted: true, blacklistdate: 0, blacklistlevel: 'high', staff_role: 'jury' });
+    } });
+    assert.deepEqual(await listed.lookup(userId), {
+        userId, blacklisted: true, level: 'high', since: new Date(0),
+    });
     const api = new Trustcord('key', { baseUrl: 'https://example.test/', userAgent: 'test-agent', fetch: async (url, init) => {
         assert.equal(url, `https://example.test/v1/lookup/${userId}`);
         assert.equal(new Headers(init?.headers).get('User-Agent'), 'test-agent');
         return Response.json({ blacklisted: false });
     } });
-    assert.deepEqual(await api.lookup(userId), { userId, blacklisted: false, level: null, since: null, staffRole: null });
+    assert.deepEqual(await api.lookup(userId), { userId, blacklisted: false, level: null, since: null });
 });
 
 test('lookupMany deduplicates before chunking by 100 and returns a mapped Map', async () => {
@@ -33,7 +31,7 @@ test('lookupMany deduplicates before chunking by 100 and returns a mapped Map', 
         const body = JSON.parse(init.body as string) as { ids: string[] };
         chunks.push(body.ids);
         return Response.json(Object.fromEntries(body.ids.map(id => [id, {
-            blacklisted: true, blacklistdate: 1758374400, blacklistlevel: 'medium', staff_role: 'jury',
+            blacklisted: true, blacklistdate: 1758374400, blacklistlevel: 'medium',
         }])));
     } });
     assert.equal((await api.lookupMany([])).size, 0);
@@ -42,7 +40,7 @@ test('lookupMany deduplicates before chunking by 100 and returns a mapped Map', 
     assert.deepEqual(chunks.map(chunk => chunk.length), [100, 100, 5]);
     assert.deepEqual([...result.keys()], ids);
     assert.deepEqual(result.get(userId), {
-        userId, blacklisted: true, level: 'medium', since: new Date(1758374400000), staffRole: 'jury',
+        userId, blacklisted: true, level: 'medium', since: new Date(1758374400000),
     });
 });
 
@@ -61,7 +59,8 @@ test('invalid snowflakes fail before network calls for lookup, bulk, report and 
     const bot = new TrustcordBot('key', { fetch });
     for (const id of ['', '1', '1234567890123456', '123456789012345678901', '1234567890123456x', ` ${userId}`]) {
         await assert.rejects(api.lookup(id), TypeError);
-        await assert.rejects(bot.lookup(id), TypeError);
+        await assert.rejects(bot.lookup(userId, id), TypeError);
+        await assert.rejects(bot.lookup(id, userId), TypeError);
         await assert.rejects(api.lookupMany([userId, id]), TypeError);
         await assert.rejects(api.report({ ...report, userIds: [id] }), TypeError);
         await assert.rejects(bot.report(userId, { ...report, userIds: [id] }), TypeError);

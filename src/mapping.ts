@@ -1,10 +1,13 @@
-import type { CaseDetail, CaseSummary, SelfRecord, Status, Tally } from './types';
+import type { BotStatus, CaseDetail, CaseSummary, SelfRecord, Status, Tally } from './types';
 
 export interface WireStatus {
     blacklisted: boolean;
     blacklistlevel?: Status['level'];
     blacklistdate?: number | null;
-    staff_role?: Status['staffRole'];
+}
+
+export interface WireBotStatus extends WireStatus {
+    staff_role?: BotStatus['staffRole'];
 }
 
 export function status(userId: string, wire: WireStatus): Status {
@@ -13,8 +16,11 @@ export function status(userId: string, wire: WireStatus): Status {
         blacklisted: wire.blacklisted,
         level: wire.blacklistlevel ?? null,
         since: wire.blacklistdate == null ? null : new Date(wire.blacklistdate * 1000),
-        staffRole: wire.staff_role ?? null,
     };
+}
+
+export function botStatus(userId: string, wire: WireBotStatus): BotStatus {
+    return { ...status(userId, wire), staffRole: wire.staff_role ?? null };
 }
 
 export interface WireTally {

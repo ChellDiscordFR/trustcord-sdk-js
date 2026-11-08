@@ -19,7 +19,6 @@ const status = await api.lookup('123456789012345678');
 if (status.blacklisted && status.level && levelAtLeast(status.level, 'medium')) {
     console.log(status.level, status.since);
 }
-console.log(status.staffRole); // 'jury', 'admin' or null, even if not listed.
 const members = await api.lookupMany(['123456789012345678', '987654321098765432']);
 console.log(members.get('123456789012345678'));
 
@@ -61,12 +60,15 @@ if (cases[0]) {
     console.log(tally.quorumReached);
 }
 const record = await bot.record(actingUserId);
-const status = await bot.lookup(actingUserId);
+const status = await bot.lookup(actingUserId, '234567890123456789');
 // bot.report(actingUserId, input) accepts the same ReportInput as api.report().
 ```
 
 The bot authenticates with `Authorization: Bot <key>` and sends the acting user
-in `X-Trustcord-User` for report, detail, vote and record calls. The backend
+in `X-Trustcord-User` for lookup, report, detail, vote and record calls. A
+lookup spends the acting user's search allowance, the same as on the website:
+10 a minute and 100 a day. Only this client receives `staffRole`; the public
+API never says whether an account sits on the Trustcord staff. The backend
 checks juror/admin permissions and NDA acceptance for details and votes. Show
 case reasons only to authorized jurors in ephemeral messages. Evidence must
 never pass through Discord.

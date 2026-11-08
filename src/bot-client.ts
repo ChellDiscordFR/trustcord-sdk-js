@@ -1,7 +1,7 @@
 import { Http, reportForm, validateUserId } from './http';
-import { caseDetail, caseSummary, record, status, tally } from './mapping';
-import type { WireCase, WireCaseDetail, WireRecord, WireStatus, WireTally } from './mapping';
-import type { CaseDetail, CaseSummary, ClientOptions, ReportInput, ReportReceipt, SelfRecord, Status, Tally, VoteInput } from './types';
+import { botStatus, caseDetail, caseSummary, record, tally } from './mapping';
+import type { WireBotStatus, WireCase, WireCaseDetail, WireRecord, WireTally } from './mapping';
+import type { BotStatus, CaseDetail, CaseSummary, ClientOptions, ReportInput, ReportReceipt, SelfRecord, Tally, VoteInput } from './types';
 
 /** Reserved for the official Trustcord bot and its single bot key. */
 export class TrustcordBot {
@@ -11,9 +11,12 @@ export class TrustcordBot {
         this.http = new Http(`Bot ${botKey}`, options);
     }
 
-    async lookup(userId: string): Promise<Status> {
+    /** The acting user spends their own search allowance, shared with the website. */
+    async lookup(actingUserId: string, userId: string): Promise<BotStatus> {
         validateUserId(userId);
-        return status(userId, await this.http.request<WireStatus>(`/bot/lookup/${userId}`));
+        return botStatus(userId, await this.http.request<WireBotStatus>(
+            `/bot/lookup/${userId}`, 'GET', undefined, actingUserId,
+        ));
     }
 
     async report(actingUserId: string, input: ReportInput): Promise<ReportReceipt> {
