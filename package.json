@@ -1,12 +1,17 @@
 {
     "name": "trustcord-sdk",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Trustcord application and official bot clients",
     "license": "MIT",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
-    "files": ["dist", "README.md"],
-    "engines": { "node": ">=20" },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
     "scripts": {
         "build": "tsc",
         "test": "node --import tsx --test test/*.test.ts",
