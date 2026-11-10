@@ -104,6 +104,34 @@ to restrict them in a server, at the latest at their first interaction. Explain
 the restriction and link to `https://trustcord.org/notice` and their record
 on the Trustcord site. Do not sanction someone for a pending accusation.
 
+## Update webhook
+
+If your bot keeps answers, declare a webhook URL (https, public host) on your
+application's page on trustcord.org; the secret is shown once. When a listing is
+lifted or its level changes, Trustcord posts within the hour the keyed hashes of
+the accounts concerned, never their IDs. Hash the IDs you hold with the same
+secret and look the matching ones up again:
+
+```ts
+import { changedAccounts, verifyWebhook, type WebhookNotification } from 'trustcord-sdk';
+
+// `rawBody` is the request body exactly as received.
+const timestamp = String(req.headers['x-trustcord-timestamp'] ?? '');
+const signature = String(req.headers['x-trustcord-signature'] ?? '');
+if (!verifyWebhook(secret, rawBody, timestamp, signature)) {
+    return res.status(401).end();
+}
+const { accounts } = JSON.parse(rawBody) as WebhookNotification;
+for (const id of changedAccounts(secret, accounts, cachedIds())) {
+    forget(id); // drop the cached answer, look it up again
+}
+res.status(204).end();
+```
+
+Answer with a 2xx status; otherwise the delivery is retried every hour, up to
+24 times. Without a webhook, the terms require you to look a kept answer up
+again at least every 24 hours.
+
 ## Development
 
 ```sh
